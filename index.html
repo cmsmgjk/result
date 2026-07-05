@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>성적 조회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{ --teal:#2b7a78; --teal2:#379b98; --ink:#1f2937; --line:#e3e6ea; --bg:#eef1f5; --blue:#1466dc; }
+  *{box-sizing:border-box}
+  body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;margin:0;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:720px;margin:0 auto;padding:16px}
+  .brand{text-align:center;padding:18px 0 6px}
+  .brand .aca{font-size:14px;color:var(--teal);font-weight:800}
+  .brand .t{font-size:22px;font-weight:800;margin-top:2px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .login label{display:block;font-size:13px;color:#4b5563;margin:10px 0 4px;font-weight:600}
+  .login input{width:100%;font-size:16px;padding:12px 14px;border:1px solid #ccd2d8;border-radius:10px}
+  .btn{width:100%;margin-top:16px;background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+  .hint{font-size:12px;color:#8a929c;margin-top:10px;text-align:center}
+  .err{color:#c0392b;font-weight:600;font-size:14px;margin-top:10px;text-align:center}
+  .who{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .who .nm{font-size:22px;font-weight:800} .who .meta{font-size:13px;color:#6b7280}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .chip{border:1px solid #cfe0fb;background:#eef5ff;color:#1f2937;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .hero{display:flex;gap:10px;margin:8px 0}
+  .hero .hb{flex:1;text-align:center;background:#f4f8f8;border:1px solid #dbe7e6;border-radius:12px;padding:14px 8px}
+  .hero .hb.main{background:linear-gradient(135deg,var(--teal),var(--teal2));border:0;color:#fff}
+  .hero .hn{font-size:12px;opacity:.85} .hero .hv{font-size:26px;font-weight:800;line-height:1.1} .hero .hv span{font-size:14px;opacity:.7;font-weight:600} .hero .hs{font-size:11px;opacity:.8;margin-top:2px}
+  .st{font-size:14px;font-weight:800;color:var(--teal);border-left:4px solid var(--teal);padding-left:8px;margin:16px 0 8px}
+  .cmp .cr{display:flex;align-items:center;gap:8px;margin:5px 0} .cmp .cl{width:66px;font-size:13px;color:#4b5563;flex:none}
+  .cbar{position:relative;flex:1;background:#eef1f5;border-radius:6px;height:22px;overflow:hidden} .cbar i{display:block;height:100%;background:#9db4c9} .cbar i.me{background:var(--teal)} .cbar span{position:absolute;right:8px;top:0;line-height:22px;font-size:13px;font-weight:700}
+  .areas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ac{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .ac .ah{display:flex;justify-content:space-between} .ac .an{font-weight:800} .ac .ap{font-weight:800;color:var(--teal)}
+  .ac .bar{height:8px;background:#eef1f5;border-radius:5px;overflow:hidden;margin:5px 0} .ac .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#4bb5b0)}
+  .ac .ar{font-size:11px;color:#6b7280} .ac .ar b{color:var(--ink)}
+  table{border-collapse:collapse;width:100%;font-size:13px} th,td{border:1px solid var(--line);padding:5px 7px;text-align:center} th{background:#eef4f4}
+  tr.x td{background:#fff5f4}
+  .wrong{padding:10px 12px;background:#fff7f6;border:1px solid #f3c9c4;border-radius:12px;line-height:1.9}
+  .wq{display:inline-block;margin:2px 6px 2px 0;font-size:13px;background:#fff;border:1px solid #f0cfca;border-radius:8px;padding:2px 9px} .wq em{color:#9aa2ac;font-style:normal;font-size:11px} .wq b{color:#c0392b;margin-left:3px}
+  details{margin-top:6px} summary{cursor:pointer;color:var(--blue);font-weight:700;font-size:13px}
+  .tablewrap{overflow:auto}
+  .foot{text-align:center;font-size:11px;color:#9aa2ac;margin:16px 0}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid #cfe0fb;border-top-color:var(--teal);border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-3px;margin-right:6px} @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="aca" id="acaName"></div><div class="t">성적 조회</div></div>
+
+  <div class="card login" id="loginCard">
+    <label>학생 ID</label>
+    <input type="text" id="inId" inputmode="numeric" placeholder="예: 234241">
+    <label>이름</label>
+    <input type="text" id="inName" placeholder="학생 이름">
+    <button class="btn" id="btnLook">성적 조회하기</button>
+    <div class="hint">자녀의 ID와 이름을 입력하세요. 본인 확인 후 성적표가 표시됩니다.</div>
+    <div class="err" id="errBox"></div>
+  </div>
+
+  <div id="resultArea" hidden></div>
+  <div class="foot" id="footer"></div>
+</div>
+
+<script>
+/* ============================================================
+   ▼▼▼ 선생님이 여기만 채우세요 (한 번) ▼▼▼
+   - URL      : Apps Script 웹앱 주소(.../exec)
+   - EXAMTYPE : 시험종류 (도구의 "시험종류"와 동일)
+   - SHEET    : 결과 시트 탭 이름 (예: "CMSMO 결과")
+   - ACADEMY  : 학원명(성적표 상단 표시)
+   ============================================================ */
+const CONFIG = {
+  URL:      '',
+  EXAMTYPE: '',
+  SHEET:    '',
+  ACADEMY:  '우리 학원'
+};
+// URL 파라미터로도 덮어쓰기 가능: ?url=...&type=...&sheet=...&aca=...
+(function(){ var q=new URLSearchParams(location.search);
+  if(q.get('url')) CONFIG.URL=q.get('url'); if(q.get('type')) CONFIG.EXAMTYPE=q.get('type');
+  if(q.get('sheet')) CONFIG.SHEET=q.get('sheet'); if(q.get('aca')) CONFIG.ACADEMY=q.get('aca');
+})();
+document.getElementById('acaName').textContent=CONFIG.ACADEMY||'';
+document.getElementById('footer').textContent=(CONFIG.ACADEMY||'')+' · OMR 자동채점 성적 조회';
+
+let DATA=null, CUREXAM=null;
+function jsonp(params){ return new Promise((res,rej)=>{ let cb='pcb_'+Math.random().toString(36).slice(2); let s=document.createElement('script');
+  function done(){ delete window[cb]; if(s.parentNode)s.remove(); }
+  window[cb]=d=>{ res(d); done(); };
+  s.onerror=()=>{ rej(new Error('연결 실패')); done(); };
+  let qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+  s.src=CONFIG.URL+'?callback='+cb+'&'+qs; document.body.appendChild(s);
+  setTimeout(()=>{ if(window[cb]){ rej(new Error('시간 초과')); done(); } },20000);
+}); }
+
+document.getElementById('btnLook').addEventListener('click', lookup);
+document.getElementById('inName').addEventListener('keydown', e=>{ if(e.key==='Enter') lookup(); });
+async function lookup(){
+  let id=document.getElementById('inId').value.trim(), nm=document.getElementById('inName').value.trim();
+  let err=document.getElementById('errBox'); err.textContent='';
+  if(!CONFIG.URL){ err.textContent='설정 오류: 관리자에게 문의하세요 (URL 미설정)'; return; }
+  if(!id||!nm){ err.textContent='ID와 이름을 모두 입력하세요.'; return; }
+  let btn=document.getElementById('btnLook'); btn.innerHTML='<span class="spin"></span>조회 중...'; btn.disabled=true;
+  try{ let d=await jsonp({action:'report', student:id, name:nm, examType:CONFIG.EXAMTYPE, sheet:CONFIG.SHEET});
+    if(!d.ok){ err.textContent=d.error||'조회 실패'; return; }
+    DATA=d; CUREXAM=d.exams[d.exams.length-1].회차; // 최근 회차
+    document.getElementById('loginCard').style.display='none';
+    render();
+  }catch(e){ err.textContent=e.message; }
+  finally{ btn.innerHTML='성적 조회하기'; btn.disabled=false; }
+}
+
+function bar(v,max,cls){ let p=max?Math.max(2,Math.round(v/max*100)):0; return `<div class="cbar"><i class="${cls||''}" style="width:${p}%"></i><span>${v}</span></div>`; }
+function render(){
+  let s=DATA.student, area=document.getElementById('resultArea'); area.hidden=false;
+  let chips=DATA.exams.map(e=>`<div class="chip ${e.회차===CUREXAM?'on':''}" data-ex="${e.회차}">${e.회차}회차</div>`).join('');
+  let ex=DATA.exams.find(e=>e.회차===CUREXAM)||DATA.exams[DATA.exams.length-1];
+  let pctCorrect=ex.itemN?Math.round(ex.correct/ex.itemN*100):0;
+  let full=ex.full;
+  let cmp=`<div class="cmp">
+    <div class="cr"><span class="cl">내 점수</span>${bar(ex.total,full,'me')}</div>
+    <div class="cr"><span class="cl">반 평균</span>${bar(ex.classAvg,full)}</div>
+    <div class="cr"><span class="cl">센터 평균</span>${bar(ex.centerAvg,full)}</div>
+    <div class="cr"><span class="cl">전체 평균</span>${bar(ex.examAvg,full)}</div>
+  </div>`;
+  let areaCards=ex.areas.map(a=>{ let pct=a.max?Math.round(a.earned/a.max*100):0;
+    return `<div class="ac"><div class="ah"><span class="an">${a.area}</span><span class="ap">${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="ar"><b>${a.earned}</b>/${a.max}점 · 정답 ${a.correct}/${a.total} · 영역석차 <b>${a.rank}</b>/${ex.groupN}</div></div>`; }).join('');
+  let wrong=ex.detail.filter(d=>!d.ok).map(d=>`<span class="wq">${d.q} <em>${d.area}</em> 정답<b>${d.ans}</b></span>`).join('')||'<span style="color:#137333;font-weight:700">전 문항 정답! 🎉</span>';
+  let rows=ex.detail.map(d=>`<tr class="${d.ok?'':'x'}"><td>${d.q}</td><td>${d.area}</td><td>${d.blank?'-':d.stu}</td><td>${d.ans}</td><td style="font-weight:800;color:${d.ok?'#137333':'#c0392b'}">${d.blank?'-':(d.ok?'○':'✕')}</td><td>${d.pts}</td></tr>`).join('');
+  // 누적 추이
+  let trend='';
+  if(DATA.exams.length>1){ trend=`<div class="st">회차별 추이</div><div class="tablewrap"><table><tr><th>회차</th>${DATA.exams.map(e=>`<th>${e.회차}</th>`).join('')}</tr>
+    <tr><td>총점</td>${DATA.exams.map(e=>`<td>${e.total}</td>`).join('')}</tr>
+    <tr><td>석차</td>${DATA.exams.map(e=>`<td>${e.rank}/${e.groupN}</td>`).join('')}</tr>
+    <tr><td>상위</td>${DATA.exams.map(e=>`<td>${e.top}%</td>`).join('')}</tr></table></div>`; }
+
+  area.innerHTML=`<div class="card">
+    <div class="who"><span class="nm">${s.이름}</span><span class="meta">${s.학교?s.학교+' · ':''}${s.학년?s.학년+' · ':''}${s.반}반 · ${s.센터}</span></div>
+    <div class="chips">${chips}</div>
+    <div class="hero">
+      <div class="hb main"><div class="hn">총점</div><div class="hv">${ex.total}<span>/${full}</span></div></div>
+      <div class="hb"><div class="hn">정답률</div><div class="hv">${pctCorrect}<span>%</span></div><div class="hs">${ex.correct}/${ex.itemN}문항</div></div>
+      <div class="hb"><div class="hn">석차</div><div class="hv">${ex.rank}<span>/${ex.groupN}</span></div><div class="hs">상위 ${ex.top}%</div></div>
+    </div>
+    <div class="st">평균 비교</div>${cmp}
+    <div class="st">영역별 성취</div><div class="areas">${areaCards}</div>
+    ${trend}
+    <div class="st">오답노트</div><div class="wrong">${wrong}</div>
+    <details><summary>문항별 채점 상세 보기</summary><div class="tablewrap" style="margin-top:8px"><table><tr><th>문항</th><th>영역</th><th>내 답</th><th>정답</th><th>채점</th><th>배점</th></tr>${rows}</table></div></details>
+  </div>`;
+  area.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{ CUREXAM=c.dataset.ex; render(); window.scrollTo({top:0,behavior:'smooth'}); }));
+}
+</script>
+</body>
+</html>
