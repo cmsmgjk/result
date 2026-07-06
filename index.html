@@ -67,21 +67,17 @@
 <script>
 /* ============================================================
    ▼▼▼ 선생님이 여기만 채우세요 (한 번) ▼▼▼
-   - URL      : Apps Script 웹앱 주소(.../exec)
-   - EXAMTYPE : 시험종류 (도구의 "시험종류"와 동일)
-   - SHEET    : 결과 시트 탭 이름 (예: "CMSMO 결과")
-   - ACADEMY  : 학원명(성적표 상단 표시)
+   - URL     : Apps Script 웹앱 주소(.../exec)
+   - ACADEMY : 학원명(성적표 상단 표시)
+   ※ 시험종류/시트 설정 불필요 — ID+이름만으로 모든 시험·회차가 조회됩니다.
    ============================================================ */
 const CONFIG = {
-  URL:      '',
-  EXAMTYPE: '',
-  SHEET:    '',
-  ACADEMY:  '우리 학원'
+  URL:     'https://script.google.com/macros/s/AKfycbxjqlcYO6GFjMQ8voSQnJKUZPpuQBfbUZe9Y8q7-v2wZfmpyNoZ4XvadaLqDyCZrHJ5pQ/exec',
+  ACADEMY: '우리 학원'
 };
-// URL 파라미터로도 덮어쓰기 가능: ?url=...&type=...&sheet=...&aca=...
+// URL 파라미터로도 덮어쓰기 가능: ?url=...&aca=...
 (function(){ var q=new URLSearchParams(location.search);
-  if(q.get('url')) CONFIG.URL=q.get('url'); if(q.get('type')) CONFIG.EXAMTYPE=q.get('type');
-  if(q.get('sheet')) CONFIG.SHEET=q.get('sheet'); if(q.get('aca')) CONFIG.ACADEMY=q.get('aca');
+  if(q.get('url')) CONFIG.URL=q.get('url'); if(q.get('aca')) CONFIG.ACADEMY=q.get('aca');
 })();
 document.getElementById('acaName').textContent=CONFIG.ACADEMY||'';
 document.getElementById('footer').textContent=(CONFIG.ACADEMY||'')+' · OMR 자동채점 성적 조회';
@@ -104,9 +100,10 @@ async function lookup(){
   if(!CONFIG.URL){ err.textContent='설정 오류: 관리자에게 문의하세요 (URL 미설정)'; return; }
   if(!id||!nm){ err.textContent='ID와 이름을 모두 입력하세요.'; return; }
   let btn=document.getElementById('btnLook'); btn.innerHTML='<span class="spin"></span>조회 중...'; btn.disabled=true;
-  try{ let d=await jsonp({action:'report', student:id, name:nm, examType:CONFIG.EXAMTYPE, sheet:CONFIG.SHEET});
+  try{ let d=await jsonp({action:'report', student:id, name:nm});
     if(!d.ok){ err.textContent=d.error||'조회 실패'; return; }
-    DATA=d; CUREXAM=d.exams[d.exams.length-1].회차; // 최근 회차
+    DATA=d; DATA.exams.forEach(e=>e._k=e.examType+'|'+e.회차);
+    CUREXAM=DATA.exams[DATA.exams.length-1]._k; // 최근 응시
     document.getElementById('loginCard').style.display='none';
     render();
   }catch(e){ err.textContent=e.message; }
@@ -116,8 +113,9 @@ async function lookup(){
 function bar(v,max,cls){ let p=max?Math.max(2,Math.round(v/max*100)):0; return `<div class="cbar"><i class="${cls||''}" style="width:${p}%"></i><span>${v}</span></div>`; }
 function render(){
   let s=DATA.student, area=document.getElementById('resultArea'); area.hidden=false;
-  let chips=DATA.exams.map(e=>`<div class="chip ${e.회차===CUREXAM?'on':''}" data-ex="${e.회차}">${e.회차}회차</div>`).join('');
-  let ex=DATA.exams.find(e=>e.회차===CUREXAM)||DATA.exams[DATA.exams.length-1];
+  let multi=new Set(DATA.exams.map(e=>e.examType)).size>1;
+  let chips=DATA.exams.map(e=>`<div class="chip ${e._k===CUREXAM?'on':''}" data-ex="${e._k}">${multi?e.examType+' ':''}${e.회차}회차</div>`).join('');
+  let ex=DATA.exams.find(e=>e._k===CUREXAM)||DATA.exams[DATA.exams.length-1];
   let pctCorrect=ex.itemN?Math.round(ex.correct/ex.itemN*100):0;
   let full=ex.full;
   let cmp=`<div class="cmp">
@@ -130,12 +128,12 @@ function render(){
     return `<div class="ac"><div class="ah"><span class="an">${a.area}</span><span class="ap">${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="ar"><b>${a.earned}</b>/${a.max}점 · 정답 ${a.correct}/${a.total} · 영역석차 <b>${a.rank}</b>/${ex.groupN}</div></div>`; }).join('');
   let wrong=ex.detail.filter(d=>!d.ok).map(d=>`<span class="wq">${d.q} <em>${d.area}</em> 정답<b>${d.ans}</b></span>`).join('')||'<span style="color:#137333;font-weight:700">전 문항 정답! 🎉</span>';
   let rows=ex.detail.map(d=>`<tr class="${d.ok?'':'x'}"><td>${d.q}</td><td>${d.area}</td><td>${d.blank?'-':d.stu}</td><td>${d.ans}</td><td style="font-weight:800;color:${d.ok?'#137333':'#c0392b'}">${d.blank?'-':(d.ok?'○':'✕')}</td><td>${d.pts}</td></tr>`).join('');
-  // 누적 추이
-  let trend='';
-  if(DATA.exams.length>1){ trend=`<div class="st">회차별 추이</div><div class="tablewrap"><table><tr><th>회차</th>${DATA.exams.map(e=>`<th>${e.회차}</th>`).join('')}</tr>
-    <tr><td>총점</td>${DATA.exams.map(e=>`<td>${e.total}</td>`).join('')}</tr>
-    <tr><td>석차</td>${DATA.exams.map(e=>`<td>${e.rank}/${e.groupN}</td>`).join('')}</tr>
-    <tr><td>상위</td>${DATA.exams.map(e=>`<td>${e.top}%</td>`).join('')}</tr></table></div>`; }
+  // 누적 추이 (같은 시험종류끼리)
+  let trend='', sameType=DATA.exams.filter(e=>e.examType===ex.examType);
+  if(sameType.length>1){ trend=`<div class="st">${multi?ex.examType+' ':''}회차별 추이</div><div class="tablewrap"><table><tr><th>회차</th>${sameType.map(e=>`<th>${e.회차}</th>`).join('')}</tr>
+    <tr><td>총점</td>${sameType.map(e=>`<td>${e.total}</td>`).join('')}</tr>
+    <tr><td>석차</td>${sameType.map(e=>`<td>${e.rank}/${e.groupN}</td>`).join('')}</tr>
+    <tr><td>상위</td>${sameType.map(e=>`<td>${e.top}%</td>`).join('')}</tr></table></div>`; }
 
   area.innerHTML=`<div class="card">
     <div class="who"><span class="nm">${s.이름}</span><span class="meta">${s.학교?s.학교+' · ':''}${s.학년?s.학년+' · ':''}${s.반}반 · ${s.센터}</span></div>
